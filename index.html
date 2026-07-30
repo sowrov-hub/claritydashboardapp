@@ -44,16 +44,6 @@
     .auth-submit { width: 100%; padding: 11px 14px; font-size: 13px; }
     .auth-error { min-height: 18px; margin-top: 12px; font-size: 11px; color: var(--red); }
     
-    .install-prompt { position: fixed; right: 22px; bottom: 22px; z-index: 190; display: none; width: min(calc(100vw - 32px), 390px); padding: 16px; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); }
-    .install-prompt.visible { display: flex; }
-    .install-prompt img { width: 42px; height: 42px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
-    .install-prompt-copy { flex: 1; min-width: 0; }
-    .install-prompt-title { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
-    .install-prompt-text { font-size: 10.5px; line-height: 1.4; color: var(--mid); }
-    .install-prompt-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-    .install-prompt-actions .btn { min-width: 72px; padding: 6px 10px; font-size: 10.5px; }
-    @media (max-width:560px) { .install-prompt { right: 16px; bottom: 16px; } }
-    
     .shell { display: flex; flex: 1; min-height: 100vh; }
     .sidebar { width: var(--sidebar-w); background: #fff; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 28px 0 24px; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; z-index: 50; }
     .sidebar-logo { padding: 0 22px 28px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
@@ -81,6 +71,10 @@
     .btn-ghost:hover { background: var(--surface3); color: var(--ink); border-color: var(--border2); }
     .btn-accent { background: linear-gradient(135deg,#5b8ef0,#7c6ff7); color: #fff; box-shadow: 0 2px 8px rgba(91,142,240,.3); }
     .btn-accent:hover { box-shadow: 0 4px 14px rgba(91,142,240,.4); }
+    
+    /* Direct Header Install Button Styling */
+    #direct-install-btn { display: none; align-items: center; gap: 6px; }
+    
     .main-wrapper { flex: 1; display: flex; flex-direction: column; margin-left: var(--sidebar-w); min-width: 0; }
     .main { flex: 1; padding: 28px 36px 72px; margin-top: 60px; overflow-y: auto; background: var(--bg); }
     .section { display: none; }
@@ -104,19 +98,6 @@
       </div>
       <button id="auth-submit-btn" class="btn btn-accent auth-submit">Unlock Dashboard</button>
       <div id="auth-error" class="auth-error"></div>
-    </div>
-  </div>
-
-  <!-- Install PWA Prompt Banner -->
-  <div class="install-prompt">
-    <img src="ChatGPT%20Image%20May%2019%2C%202026%2C%2003_02_46%20PM.png" alt="App Icon">
-    <div class="install-prompt-copy">
-      <div class="install-prompt-title">Install Clarity Dashboard</div>
-      <div class="install-prompt-text">Add to home screen for faster access & offline support.</div>
-    </div>
-    <div class="install-prompt-actions">
-      <button id="install-btn" class="btn btn-accent">Install</button>
-      <button id="dismiss-install" class="btn btn-ghost">Dismiss</button>
     </div>
   </div>
 
@@ -152,6 +133,8 @@
           <option value="BDT">BDT (৳)</option>
         </select>
         <div class="topbar-actions">
+          <!-- Direct Header Install App Button -->
+          <button id="direct-install-btn" class="btn btn-accent">📲 Install App</button>
           <button id="lock-app-btn" class="btn btn-ghost">Lock App</button>
         </div>
       </header>
@@ -165,64 +148,53 @@
     </div>
   </div>
 
-  <!-- PWA & Application Script Integration -->
+  <!-- Service Worker & Direct Install Script -->
   <script>
     // 1. Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('Service Worker registered successfully:', reg.scope))
-          .catch(err => console.error('Service Worker registration failed:', err));
+          .then(reg => console.log('Service Worker registered:', reg.scope))
+          .catch(err => console.error('SW registration failed:', err));
       });
     }
 
-    // 2. Custom Install Banner & Prompt Listener
+    // 2. Direct Install Handler (twopurse style)
     let deferredPrompt;
-    const installBanner = document.querySelector('.install-prompt');
-    const installButton = document.getElementById('install-btn');
-    const dismissButton = document.getElementById('dismiss-install');
+    const directInstallBtn = document.getElementById('direct-install-btn');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent browser mini-infobar on mobile
+      // Prevent automatic browser mini-infobar
       e.preventDefault();
-      // Save prompt event for user action
+      // Store event
       deferredPrompt = e;
-
-      // Reveal custom install banner UI
-      if (installBanner) {
-        installBanner.classList.add('visible');
+      // Show topbar button directly
+      if (directInstallBtn) {
+        directInstallBtn.style.display = 'inline-flex';
       }
     });
 
-    if (installButton) {
-      installButton.addEventListener('click', async () => {
+    if (directInstallBtn) {
+      directInstallBtn.addEventListener('click', async () => {
         if (!deferredPrompt) return;
 
-        // Trigger native prompt
+        // Immediately launch native browser prompt dialog
         deferredPrompt.prompt();
+
         const { outcome } = await deferredPrompt.userChoice;
-        console.log('User response to install prompt:', outcome);
+        console.log(`User response to install: ${outcome}`);
 
+        // Hide button after user interacts
         deferredPrompt = null;
-        if (installBanner) {
-          installBanner.classList.remove('visible');
-        }
-      });
-    }
-
-    if (dismissButton) {
-      dismissButton.addEventListener('click', () => {
-        if (installBanner) {
-          installBanner.classList.remove('visible');
-        }
+        directInstallBtn.style.display = 'none';
       });
     }
 
     window.addEventListener('appinstalled', () => {
       console.log('App successfully installed!');
       deferredPrompt = null;
-      if (installBanner) {
-        installBanner.classList.remove('visible');
+      if (directInstallBtn) {
+        directInstallBtn.style.display = 'none';
       }
     });
   </script>
