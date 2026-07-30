@@ -10,7 +10,13 @@
   "icons": [
     {
       "src": "ChatGPT%20Image%20May%2019%2C%202026%2C%2003_02_46%20PM.png",
-      "sizes": "1254x1254",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ChatGPT%20Image%20May%2019%2C%202026%2C%2003_02_46%20PM.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
